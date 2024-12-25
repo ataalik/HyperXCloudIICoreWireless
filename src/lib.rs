@@ -1,7 +1,7 @@
-use std::{time::Duration};
+use std::time::Duration;
 
 use hidapi::{HidApi, HidDevice, HidError};
-use thistermination::{TerminationFull};
+use thistermination::TerminationFull;
 
 use num_enum::{TryFromPrimitive, TryFromPrimitiveError};
 
@@ -9,7 +9,6 @@ use num_enum::{TryFromPrimitive, TryFromPrimitiveError};
 const VENDOR_IDS: [u16; 2] = [0x0951, 0x03F0];
 // Possible Cloud II Core Wireless product IDs
 const PRODUCT_IDS: [u16; 1] = [0x0995];
-
 
 const MAGIC_BYTE: u8 = 102;
 
@@ -46,7 +45,6 @@ impl From<TryFromPrimitiveError<ReportByte>> for DeviceError {
         DeviceError::UnknownCommand(err.number)
     }
 }
-
 
 #[derive(Debug)]
 pub enum DeviceEvent {
@@ -86,26 +84,25 @@ impl DeviceEvent {
         })?;
 
         match command {
-            ReportByte::SetMonitorState => {Ok(Self::MonitoringMic(buf[0] == 1))},
+            ReportByte::SetMonitorState => Ok(Self::MonitoringMic(buf[0] == 1)),
             ReportByte::SetPowerAutoOffTiming => Ok(Self::SetTimeout(buf[0])),
             ReportByte::SetMicMuteState => Ok(Self::MicMuted(buf[0] == 1)),
-            ReportByte::SetMonitorVolume => {Ok(Self::SetMonitorVolume(buf[0]))},
-            ReportByte::UpdateMicConnectionStatus => { Ok(Self::MicConnected(buf[0] == 1)) },
-            ReportByte::UpdateMicMonitorStatus => { Ok(Self::MonitoringMic(buf[0] == 1)) },
-            ReportByte::UpdateMicMuteStatus => { Ok(Self::MicMuted(buf[0] == 1)) },
-            ReportByte::UpdateConnectedStatus => { Ok(Self::HeadsetConnected(buf[0] == 1))},
-            ReportByte::UpdateChargingStatus => { Ok(Self::Charging(buf[0] == 1))},
-            ReportByte::UpdateBatteryStatus => { Ok(Self::ChargeLevel(buf[2]))},
-            ReportByte::GetMonitorState => {Ok(Self::MonitoringMic(buf[0] == 1))},
-            ReportByte::GetPowerAutoOffTiming => {Ok(Self::GetTimeout(buf[0]))},
-            ReportByte::GetMicMuteState => {Ok(Self::MicMuted(buf[0] == 1))},
-            ReportByte::GetMonitorVolume => {Ok(Self::MonitorVolume(buf[0]))},
-            ReportByte::GetBatteryLevel =>{Ok(Self::SetBatteryLevel(buf[2]))},
-            ReportByte::GetChargerState => {Ok(Self::Charging(buf[0] == 1))},
-            ReportByte::GetMicPlugState => {Ok(Self::MicConnected(buf[0] == 1))},
-            ReportByte::GetConnectedStatus => {Ok(Self::HeadsetConnected(buf[0] == 1))},
+            ReportByte::SetMonitorVolume => Ok(Self::SetMonitorVolume(buf[0])),
+            ReportByte::UpdateMicConnectionStatus => Ok(Self::MicConnected(buf[0] == 1)),
+            ReportByte::UpdateMicMonitorStatus => Ok(Self::MonitoringMic(buf[0] == 1)),
+            ReportByte::UpdateMicMuteStatus => Ok(Self::MicMuted(buf[0] == 1)),
+            ReportByte::UpdateConnectedStatus => Ok(Self::HeadsetConnected(buf[0] == 1)),
+            ReportByte::UpdateChargingStatus => Ok(Self::Charging(buf[0] == 1)),
+            ReportByte::UpdateBatteryStatus => Ok(Self::ChargeLevel(buf[2])),
+            ReportByte::GetMonitorState => Ok(Self::MonitoringMic(buf[0] == 1)),
+            ReportByte::GetPowerAutoOffTiming => Ok(Self::GetTimeout(buf[0])),
+            ReportByte::GetMicMuteState => Ok(Self::MicMuted(buf[0] == 1)),
+            ReportByte::GetMonitorVolume => Ok(Self::MonitorVolume(buf[0])),
+            ReportByte::GetBatteryLevel => Ok(Self::SetBatteryLevel(buf[2])),
+            ReportByte::GetChargerState => Ok(Self::Charging(buf[0] == 1)),
+            ReportByte::GetMicPlugState => Ok(Self::MicConnected(buf[0] == 1)),
+            ReportByte::GetConnectedStatus => Ok(Self::HeadsetConnected(buf[0] == 1)),
         }
-
     }
 }
 
@@ -134,7 +131,6 @@ pub struct Device {
     pub mic_monitored: Option<bool>,
     pub timeout: u8,
     pub monitor_volume: u8,
-
 }
 
 impl std::fmt::Display for Device {
@@ -161,6 +157,7 @@ impl Device {
                 }
             })
             .ok_or(DeviceError::NoDeviceFound())??;
+
         let device = Device {
             hid_device,
             headset_connected: None,
@@ -178,7 +175,6 @@ impl Device {
     }
 
     fn update_self_with_event(&mut self, event: &DeviceEvent) {
-        
         match event {
             DeviceEvent::MicConnected(connected) => self.mic_connected = Some(*connected),
             DeviceEvent::MonitoringMic(monitoring) => self.mic_monitored = Some(*monitoring),
@@ -192,7 +188,6 @@ impl Device {
             DeviceEvent::MonitorVolume(volume) => self.monitor_volume = *volume,
             DeviceEvent::SetMonitorVolume(volume) => self.monitor_volume = *volume,
         };
-
     }
 
     pub fn wait_for_updates(&mut self, duration: Duration) -> Result<DeviceEvent, DeviceError> {
@@ -210,53 +205,72 @@ impl Device {
     }
 
     pub fn mute_mic(&self, mute: bool) -> Result<usize, HidError> {
-        return self.hid_device.write(&[MAGIC_BYTE, ReportByte::SetMicMuteState as u8,mute as u8]);
+        return self
+            .hid_device
+            .write(&[MAGIC_BYTE, ReportByte::SetMicMuteState as u8, mute as u8]);
     }
 
-    pub fn monitor_mic(&self, mute: bool)-> Result<usize, HidError>{
-        return self.hid_device.write(&[MAGIC_BYTE, ReportByte::SetMonitorState as u8, mute as u8]);
+    pub fn monitor_mic(&self, mute: bool) -> Result<usize, HidError> {
+        return self
+            .hid_device
+            .write(&[MAGIC_BYTE, ReportByte::SetMonitorState as u8, mute as u8]);
     }
-    
+
     pub fn set_timeout(&self, timeout: u8) -> Result<usize, HidError> {
-        return self.hid_device.write(&[MAGIC_BYTE, ReportByte::SetPowerAutoOffTiming as u8, timeout]);
+        return self.hid_device.write(&[
+            MAGIC_BYTE,
+            ReportByte::SetPowerAutoOffTiming as u8,
+            timeout,
+        ]);
     }
-    
+
     pub fn set_monitor_volume(&self, volume: i8) -> Result<usize, HidError> {
         //TODO must be -5 <= volume <= 5
-        return self.hid_device.write(&[MAGIC_BYTE, ReportByte::SetMonitorVolume as u8, volume.to_ne_bytes()[0]]);
+        return self.hid_device.write(&[
+            MAGIC_BYTE,
+            ReportByte::SetMonitorVolume as u8,
+            volume.to_ne_bytes()[0],
+        ]);
     }
-    
+
     pub fn update_battery_level(&self) -> Result<usize, HidError> {
-        
-        self.hid_device.write(&[MAGIC_BYTE, ReportByte::GetBatteryLevel as u8])
+        self.hid_device
+            .write(&[MAGIC_BYTE, ReportByte::GetBatteryLevel as u8])
     }
-    
+
     pub fn get_monitor_volume(&self) -> Result<usize, HidError> {
-        self.hid_device.write(&[MAGIC_BYTE, ReportByte::GetMonitorVolume as u8])
+        self.hid_device
+            .write(&[MAGIC_BYTE, ReportByte::GetMonitorVolume as u8])
     }
 
     pub fn get_timeout(&self) -> Result<usize, HidError> {
-        self.hid_device.write(&[MAGIC_BYTE, ReportByte::GetPowerAutoOffTiming as u8])
+        self.hid_device
+            .write(&[MAGIC_BYTE, ReportByte::GetPowerAutoOffTiming as u8])
     }
-    
+
     pub fn get_monitor_state(&self) -> Result<usize, HidError> {
-        self.hid_device.write(&[MAGIC_BYTE, ReportByte::GetMonitorState as u8])
+        self.hid_device
+            .write(&[MAGIC_BYTE, ReportByte::GetMonitorState as u8])
     }
 
     pub fn get_mic_mute_state(&self) -> Result<usize, HidError> {
-        self.hid_device.write(&[MAGIC_BYTE, ReportByte::GetMicMuteState as u8])
+        self.hid_device
+            .write(&[MAGIC_BYTE, ReportByte::GetMicMuteState as u8])
     }
 
     pub fn get_charger_state(&self) -> Result<usize, HidError> {
-        self.hid_device.write(&[MAGIC_BYTE, ReportByte::GetChargerState as u8])
+        self.hid_device
+            .write(&[MAGIC_BYTE, ReportByte::GetChargerState as u8])
     }
 
     pub fn get_mic_connected(&self) -> Result<usize, HidError> {
-        self.hid_device.write(&[MAGIC_BYTE, ReportByte::GetMicPlugState as u8])
+        self.hid_device
+            .write(&[MAGIC_BYTE, ReportByte::GetMicPlugState as u8])
     }
 
     pub fn get_headset_connected(&self) -> Result<usize, HidError> {
-        self.hid_device.write(&[MAGIC_BYTE, ReportByte::GetConnectedStatus as u8])
+        self.hid_device
+            .write(&[MAGIC_BYTE, ReportByte::GetConnectedStatus as u8])
     }
 
     pub fn sync_state(&self) {
@@ -268,8 +282,6 @@ impl Device {
         self.get_monitor_volume();
         self.get_charger_state();
         self.get_mic_connected();
-        
-
     }
     pub fn clear_state(&mut self) {
         self.headset_connected = None;
